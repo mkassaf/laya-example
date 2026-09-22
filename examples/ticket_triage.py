@@ -9,15 +9,28 @@ Run:
     python examples/ticket_triage.py
 """
 
+import os
+
+# Once a checkpoint is cached locally (~/.cache/huggingface/hub), huggingface_hub still
+# does an online cache-verification round trip on every call by default, which is what
+# prints "Fetching N files" each run even though nothing is re-downloaded. Going offline
+# skips that network check entirely. If a checkpoint isn't cached yet (fresh checkout),
+# offline mode raises, so fall back to a normal online run, which downloads and caches it.
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+
 from laya import Router
 
 # preload=True (with no names) would build all three bundled checkpoints, including
 # typed-decisions, which this example never routes to. Preloading just the two checkpoints
 # actually used here (routed by script/language -- see laya/router.py) skips that wasted
-# build every run. Model files themselves are cached by huggingface_hub after the first
-# run; set HF_HUB_OFFLINE=1 to skip its cache-verification network check once warm.
-router = Router()
-router.preload(["english", "multilingual"])
+# build every run.
+try:
+    router = Router()
+    router.preload(["english", "multilingual"])
+except Exception:
+    os.environ.pop("HF_HUB_OFFLINE", None)
+    router = Router()
+    router.preload(["english", "multilingual"])
 
 state = {
     "from": "user@acme.com",
