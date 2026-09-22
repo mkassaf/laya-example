@@ -11,7 +11,13 @@ Run:
 
 from laya import Router
 
-router = Router(preload=True)
+# preload=True (with no names) would build all three bundled checkpoints, including
+# typed-decisions, which this example never routes to. Preloading just the two checkpoints
+# actually used here (routed by script/language -- see laya/router.py) skips that wasted
+# build every run. Model files themselves are cached by huggingface_hub after the first
+# run; set HF_HUB_OFFLINE=1 to skip its cache-verification network check once warm.
+router = Router()
+router.preload(["english", "multilingual"])
 
 state = {
     "from": "user@acme.com",
